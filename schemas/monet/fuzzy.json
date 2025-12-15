@@ -1,0 +1,42 @@
+{
+  "business_legal_name": [
+    "business name", "legal name", "company name", "merchant name",
+    "biz name", "company", "legal business name", "companyname",
+    "iusa company name"
+  ],
+  "dba": [
+    "doing business as", "trade name", "fictitious name", "store name"
+  ],
+  "business_address": ["address", "street address", "business address", "street", "iusa mailing address"],
+  "business_city": ["city", "business city", "iusa mail city name"],
+  "business_state": ["state", "st", "business state", "iusa mail state abbrev"],
+  "zip": ["zip", "zipcode", "postal", "postal code", "iusa mail zip"],
+
+  "phone_raw": [
+    "phone", "phone number", "telephone", "tel", "business phone"
+  ],
+
+  "start_date": ["start date", "established", "opening date", "start"],
+  "tax_id": ["ein", "tin", "federal id", "tax id", "ss4"],
+
+  "soc": ["soc", "vertical", "sic", "industry", "industry code", "primary sic desc"],
+
+  "business_email": ["email", "business email", "contact email", "email address"],
+  "business_second_email": ["secondary email", "alt email"],
+
+  "second_phone_raw": ["second phone", "alternate phone", "secondary phone", "phone number1", "phonenumber1", "phone2"],
+
+  "owner_name": ["owner", "borrower", "contact name", "principal", "merchant's name", "merchants name", "merchantsname", "full name"],
+  "dob": ["dob", "birthdate", "date of birth"],
+  "ssn": ["ssn", "social", "social security"],
+
+  "owner_address": ["owner address", "home address", "personal address"],
+  "owner_city": ["owner city"],
+  "owner_state": ["owner state"],
+  "owner_zip": ["owner zip", "owner postal"],
+
+  "owner_phone": ["owner phone", "mobile", "cell", "contact phone"],
+  "owner_email": ["owner email", "personal email"],
+  "owner_second_email": ["owner secondary email", "owner alt email"]
+}
+

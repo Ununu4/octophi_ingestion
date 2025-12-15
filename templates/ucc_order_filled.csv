@@ -1,0 +1,29 @@
+incoming_schema,expected_schema
+iusa company name,business_legal_name
+,dba
+iusa mailing address,business_address
+iusa mail city name,business_city
+iusa mail state abbrev,business_state
+iusa mail zip,zip
+SSN,phone_raw
+,phone_clean
+,start_date
+,tax_id
+primary sic desc,soc
+,source
+email address,business_email
+,business_second_email
+,second_phone_raw
+,second_phone_clean
+full name,owner_name
+,dob
+,ssn
+,owner_address
+,owner_city
+,owner_state
+,owner_zip
+,owner_email
+,owner_second_email
+,owner_phone
+,owner_phone_clean
+

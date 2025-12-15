@@ -1,0 +1,39 @@
+{
+  "_comment": "Field combination rules for OCTOPHI - combines multiple columns into one",
+  
+  "combinations": [
+    {
+      "target_field": "owner_name",
+      "type": "concat",
+      "sources": [
+        {"pattern": "first name", "order": 1},
+        {"pattern": "last name", "order": 2}
+      ],
+      "separator": " ",
+      "description": "Combine FIRST NAME + LAST NAME into owner_name"
+    },
+    {
+      "target_field": "owner_name",
+      "type": "concat",
+      "sources": [
+        {"pattern": "firstname", "order": 1},
+        {"pattern": "lastname", "order": 2}
+      ],
+      "separator": " ",
+      "description": "Combine firstname + lastname (no space variant)"
+    },
+    {
+      "target_field": "business_address",
+      "type": "concat",
+      "sources": [
+        {"pattern": "street", "order": 1},
+        {"pattern": "suite", "order": 2},
+        {"pattern": "apt", "order": 2}
+      ],
+      "separator": " ",
+      "description": "Combine street address with suite/apt"
+    }
+  ]
+}
+
+

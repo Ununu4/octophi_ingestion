@@ -1,0 +1,75 @@
+{
+  "schema_name": "monet_merchant",
+  "version": "1.0",
+
+  "entities": {
+    "lead": {
+      "primary_key": "id",
+
+      "fields": {
+        "business_legal_name": { "type": "string", "required": true },
+        "dba": { "type": "string", "required": false },
+
+        "business_address": { "type": "address" },
+        "business_city": { "type": "string" },
+        "business_state": { "type": "state" },
+        "zip": { "type": "zip" },
+
+        "phone_raw": { "type": "phone" },
+        "phone_clean": { "type": "phone_clean", "derived_from": "phone_raw" },
+
+        "start_date": { "type": "date" },
+        "tax_id": { "type": "id_number" },
+
+        "soc": { "type": "soc_code" },
+
+        "business_email": { "type": "email" },
+        "business_second_email": { "type": "email" },
+
+        "second_phone_raw": { "type": "phone" },
+        "second_phone_clean": { "type": "phone_clean", "derived_from": "second_phone_raw" },
+
+        "created_at": { "type": "datetime", "system_generated": true },
+        "updated_at": { "type": "datetime", "system_generated": true }
+      }
+    },
+
+    "owner": {
+      "primary_key": "id",
+
+      "fields": {
+        "owner_name": { "type": "person_name" },
+        "dob": { "type": "date" },
+        "ssn": { "type": "id_number" },
+
+        "owner_address": { "type": "address" },
+        "owner_city": { "type": "string" },
+        "owner_state": { "type": "state" },
+        "owner_zip": { "type": "zip" },
+
+        "owner_email": { "type": "email" },
+        "owner_second_email": { "type": "email" },
+
+        "owner_phone": { "type": "phone" },
+        "owner_phone_clean": { "type": "phone_clean", "derived_from": "owner_phone" },
+
+        "created_at": { "type": "datetime", "system_generated": true },
+        "updated_at": { "type": "datetime", "system_generated": true }
+      }
+    }
+  },
+
+  "relationships": {
+    "lead_to_owner": {
+      "type": "one_to_one",
+      "foreign_key": "lead_id"
+    }
+  },
+
+  "appendix": {
+    "enabled": true,
+    "table_name": "lead_appendix_kv",
+    "mode": "key_value"
+  }
+}
+

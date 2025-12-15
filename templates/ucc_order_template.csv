@@ -1,0 +1,11 @@
+incoming_schema,expected_schema
+iusa company name,business_legal_name
+full name,owner_name
+SSN,phone_raw
+email address,business_email
+iusa mailing address,business_address
+iusa mail city name,business_city
+iusa mail state abbrev,business_state
+iusa mail zip,zip
+primary sic desc,soc
+

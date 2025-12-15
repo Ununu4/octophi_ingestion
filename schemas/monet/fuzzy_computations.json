@@ -1,0 +1,20 @@
+{
+  "_comment": "Field computation rules - convert values to computed fields",
+  
+  "computations": [
+    {
+      "target_field": "start_date",
+      "type": "duration_to_date",
+      "sources": [
+        {"pattern": "tib"},
+        {"pattern": "time in business"},
+        {"pattern": "years in business"},
+        {"pattern": "business age"}
+      ],
+      "computation": "subtract_duration_from_today",
+      "description": "Convert time-in-business duration to actual start date"
+    }
+  ]
+}
+
+

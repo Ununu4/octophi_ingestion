@@ -68,12 +68,52 @@ pip install pandas openpyxl
 # Navigate to project directory
 cd octophi_ingestion
 
-# Run ingestion
+# Run ingestion with interactive database selection
+python -m ingestion.cli \
+    --schema monet \
+    --file /path/to/input.xlsx \
+    --source "Broker Name"
+# System will prompt you to choose between db1 (current) or db2 (new)
+
+# Or specify database directly
 python -m ingestion.cli \
     --schema monet \
     --file /path/to/input.xlsx \
     --db /path/to/database.sqlite \
     --source "Broker Name"
+
+# With preprocessing template (recommended for recurring sources)
+python -m ingestion.cli \
+    --schema monet \
+    --file /path/to/input.xlsx \
+    --source "Broker Name" \
+    --mapping-template templates/my_source_template.csv
+# System will prompt for database selection
+```
+
+### 2.1 Database Selection
+
+The system supports two production databases:
+
+- **Database 1 (db1)**: Current database at `C:\Users\ottog\Desktop\monet_database_engine\unified_database_migrated.sqlite`
+- **Database 2 (db2)**: New database at `C:\Users\ottog\Desktop\monet_database_engine\unified_database_migrated_2.sqlite`
+
+If you don't specify `--db` flag, the system will prompt you to choose:
+
+```
+======================================================================
+DATABASE SELECTION
+======================================================================
+
+Please select target database:
+
+  [1] Current Database (db1)
+      C:\Users\ottog\Desktop\monet_database_engine\unified_database_migrated.sqlite
+
+  [2] New Database (db2)
+      C:\Users\ottog\Desktop\monet_database_engine\unified_database_migrated_2.sqlite
+
+Enter your choice (1 or 2):
 ```
 
 ### 3. Full Command Options
@@ -96,12 +136,63 @@ python -m ingestion.cli \
 |----------|----------|-------------|
 | `--schema` | Yes | Schema name (e.g., "monet") |
 | `--file` | Yes | Input CSV or XLSX file |
-| `--db` | Yes | SQLite database path |
+| `--db` | No | SQLite database path (if omitted, will prompt for db1 or db2) |
 | `--source` | Yes | Source name for this data |
+| `--mapping-template` | No | **Path to CSV template for preprocessing header mapping (bypasses fuzzy matching)** |
 | `--upload-tag` | No | Custom upload tag (default: timestamp) |
 | `--create-indexes` | No | Create performance indexes |
 | `--log-file` | No | Log to file (default: console only) |
 | `--dry-run` | No | Preview only, don't insert data |
+| `--skip-appendix` | No | Skip appendix data insertion (only mapped fields) |
+
+### 2.2 Preprocessing Mode (Template-Based Mapping)
+
+**For recurring data sources with consistent headers**, use template-based preprocessing for:
+- ⚡ **Lightning-fast** direct lookup (no fuzzy overhead)
+- 🎯 **100% accuracy** from explicit mappings
+- 📝 **Reusable** templates for each source
+
+**Create a template CSV:**
+```csv
+original_header,canonical_field
+Business Name,business_legal_name
+Phone,phone_raw
+Owner Name,owner_name
+Address,business_address
+```
+
+**Use the template:**
+```bash
+python -m ingestion.cli \
+    --schema monet \
+    --file data.xlsx \
+    --source "Broker Name" \
+    --mapping-template templates/broker_template.csv
+# Will prompt for database selection
+```
+
+**See `templates/README.md` for detailed template documentation.**
+
+### 2.3 Using the Batch Script
+
+For Windows users, use the convenient batch script:
+
+```batch
+REM Interactive database selection (will prompt)
+ingest_to_production.bat "path\to\data.csv" "Source Name"
+
+REM Specify database 1 (current)
+ingest_to_production.bat "path\to\data.csv" "Source Name" 1
+
+REM Specify database 2 (new)
+ingest_to_production.bat "path\to\data.csv" "Source Name" 2
+
+REM With preprocessing template (db1)
+ingest_to_production.bat "path\to\data.csv" "Source Name" 1 "templates\source_template.csv"
+
+REM With template, interactive database selection (leave db parameter empty)
+ingest_to_production.bat "path\to\data.csv" "Source Name" "" "templates\source_template.csv"
+```
 
 ---
 

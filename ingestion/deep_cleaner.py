@@ -7,7 +7,7 @@ that conform to the schema, with extra columns routed to appendix.
 
 import pandas as pd
 from pathlib import Path
-from typing import Tuple, List, Dict
+from typing import Tuple, List, Dict, Optional
 from .schema_loader import Schema
 from .header_mapper import HeaderMapper
 from .type_normalizer import Normalizer
@@ -71,6 +71,11 @@ class DeepCleaner:
             unknown_cols = [col for col in unknown_cols 
                            if col not in combination_sources]
             
+            # Exclude specific columns from appendix (e.g., ZB Status)
+            exclude_from_appendix = ['ZB Status', 'zb status', 'ZB Status ']
+            unknown_cols = [col for col in unknown_cols 
+                           if col not in exclude_from_appendix]
+            
             print(f"[LOAD] {len(df)} rows with {len(df.columns)} columns")
             print(f"[DIRECT MAP] Mapped {len(known_cols)} fields via template")
             if combinations:
@@ -109,6 +114,11 @@ class DeepCleaner:
             
             unknown_cols = [col for col in unknown_cols 
                            if col not in combination_sources and col not in computation_sources]
+            
+            # Exclude specific columns from appendix (e.g., ZB Status)
+            exclude_from_appendix = ['ZB Status', 'zb status', 'ZB Status ']
+            unknown_cols = [col for col in unknown_cols 
+                           if col not in exclude_from_appendix]
             
             print(f"[LOAD] {len(df)} rows with {len(df.columns)} columns")
             print(f"[FUZZY MAP] Matched {len(known_cols)} fields")
@@ -203,14 +213,62 @@ class DeepCleaner:
             else:
                 # Regular field
                 if field in df.columns:
-                    # Normalize based on type
                     field_type = self.schema.field_type(entity, field)
-                    result[field] = df[field].apply(lambda x: self.normalizer.normalize(x, field_type))
+                    
+                    # Special handling for start_date: convert TIB (Time In Business) to actual date
+                    if field == 'start_date' and field_type == 'date':
+                        result[field] = df[field].apply(lambda x: self._convert_tib_to_date(x))
+                    else:
+                        # Normalize based on type
+                        result[field] = df[field].apply(lambda x: self.normalizer.normalize(x, field_type))
                 else:
                     # Field not present in input - fill with None
                     result[field] = None
         
         return result
+    
+    def _convert_tib_to_date(self, value: any) -> Optional[str]:
+        """
+        Convert Time In Business (TIB) numeric value to actual start date.
+        
+        If value is numeric (e.g., 12 meaning 12 years in business),
+        calculate the start date as: current_year - TIB_value.
+        
+        If value is already a date string, pass it through to the normalizer.
+        
+        Args:
+            value: TIB value (numeric or date string)
+            
+        Returns:
+            ISO date string (YYYY-MM-DD) or None
+        """
+        if value is None or value == '':
+            return None
+        
+        value_str = str(value).strip()
+        
+        # Check if it's already a date format (contains '-' or '/')
+        if '-' in value_str or '/' in value_str:
+            # Looks like a date, pass to normalizer
+            return self.normalizer.normalize(value_str, 'date')
+        
+        # Try to parse as numeric (years in business)
+        try:
+            tib_years = float(value_str)
+            
+            # Sanity check: TIB should be between 0 and 100 years
+            if 0 <= tib_years <= 100:
+                from datetime import datetime
+                current_year = datetime.now().year
+                start_year = int(current_year - tib_years)
+                # Return as YYYY-01-01 (default to January 1st)
+                return f"{start_year}-01-01"
+        except (ValueError, TypeError):
+            # Not numeric, try passing to normalizer as-is
+            pass
+        
+        # Last resort: pass to date normalizer
+        return self.normalizer.normalize(value_str, 'date')
     
     def _create_appendix_df(self, df: pd.DataFrame, extra_columns: List[str], upload_tag: str) -> pd.DataFrame:
         """

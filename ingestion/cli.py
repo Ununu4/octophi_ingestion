@@ -22,6 +22,49 @@ from utils.logger import setup_logger
 from utils.file_ops import validate_file_path, get_file_size_mb
 
 
+def select_database():
+    """
+    Prompt user to select target database.
+    
+    Returns:
+        str: Selected database path
+    """
+    db1_path = r'C:\Users\ottog\Desktop\monet_database_engine\unified_database_migrated.sqlite'
+    db2_path = r'C:\Users\ottog\Desktop\monet_database_engine\unified_database_migrated_2.sqlite'
+    
+    print()
+    print("=" * 70)
+    print("DATABASE SELECTION")
+    print("=" * 70)
+    print()
+    print("Please select target database:")
+    print()
+    print("  [1] Current Database (db1)")
+    print(f"      {db1_path}")
+    print()
+    print("  [2] New Database (db2)")
+    print(f"      {db2_path}")
+    print()
+    
+    while True:
+        choice = input("Enter your choice (1 or 2): ").strip()
+        
+        if choice == '1':
+            print()
+            print(f"✓ Selected: Current Database (db1)")
+            print(f"  Path: {db1_path}")
+            print()
+            return db1_path
+        elif choice == '2':
+            print()
+            print(f"✓ Selected: New Database (db2)")
+            print(f"  Path: {db2_path}")
+            print()
+            return db2_path
+        else:
+            print("❌ Invalid choice. Please enter 1 or 2.")
+
+
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -55,8 +98,9 @@ Examples:
     )
     parser.add_argument(
         '--db',
-        required=True,
-        help='Database file path (SQLite)'
+        required=False,
+        default=None,
+        help='Database file path (SQLite) - if not provided, will prompt for selection'
     )
     parser.add_argument(
         '--source',
@@ -112,6 +156,12 @@ Examples:
     print()
     
     try:
+        # Select database if not provided via command line
+        if args.db is None:
+            db_path = select_database()
+        else:
+            db_path = args.db
+        
         # Generate upload tag if not provided
         upload_tag = args.upload_tag or datetime.now().strftime('%Y%m%d_%H%M%S')
         
@@ -233,8 +283,8 @@ Examples:
             sys.exit(0)
         
         # Initialize ingest engine
-        logger.info(f"Connecting to database: {args.db}")
-        engine = IngestEngine(args.db, schema)
+        logger.info(f"Connecting to database: {db_path}")
+        engine = IngestEngine(db_path, schema)
         
         # Ingest data
         engine.ingest(leads_df, owners_df, appendix_df, upload_tag, args.source_name)
@@ -250,7 +300,7 @@ Examples:
         print("=" * 70)
         print(f"Source:      {args.source_name}")
         print(f"Upload tag:  {upload_tag}")
-        print(f"Database:    {args.db}")
+        print(f"Database:    {db_path}")
         print(f"Leads:       {len(leads_df):,}")
         print(f"Owners:      {len(owners_df):,}")
         print(f"Appendix:    {len(appendix_df):,}")

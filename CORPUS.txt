@@ -1,0 +1,93 @@
+================================================================================
+OCTOPHI INGESTION SYSTEM — QUICK REFERENCE
+================================================================================
+
+HOW TO TURN ON THE SYSTEM
+--------------------------------------------------------------------------------
+1. Open terminal in project root: octophi_ingestion\
+2. Activate venv:  venv\Scripts\activate.bat  (Windows)
+3. Database: Postgres at postgresql://postgres:postgres@localhost:5433/leadpool_migtest
+   - Ensure Postgres is running on port 5433
+   - Set DATABASE_URL to override (optional)
+
+
+CLI COMMANDS (all options)
+--------------------------------------------------------------------------------
+python -m ingestion.cli ^
+    --schema monet ^
+    --file "path\to\input.csv" ^
+    --source "Source Name" ^
+    --mapping-template "path\to\template.csv" ^
+    [--db-url "postgresql://..."] ^
+    [--upload-tag "custom_tag"] ^
+    [--log-file ingestion.log] ^
+    [--dry-run] ^
+    [--skip-appendix]
+
+Arguments:
+  --schema           Required. Schema name (use: monet)
+  --file             Required. Input CSV or XLSX/XLS
+  --source           Required. Source name for this data
+  --mapping-template Required. CSV with incoming_schema,expected_schema
+  --db-url           Optional. Postgres URL (else DATABASE_URL or config default)
+  --upload-tag       Optional. Custom tag (default: YYYYMMDD_HHMMSS)
+  --log-file         Optional. Log to file
+  --dry-run          Optional. Preview only, no DB insert
+  --skip-appendix    Optional. Do not insert appendix rows
+
+
+BATCH SCRIPT (single file, Windows)
+--------------------------------------------------------------------------------
+ingest_to_production.bat "path\to\file.csv" "Source_Name" "path\to\template.csv"
+
+Examples:
+  ingest_to_production.bat "data\leads.csv" "BrokerXYZ" "FINAL_TEMPLATE.csv"
+  ingest_to_production.bat "data\leads.xlsx" "VendorA" "templates\vendor_a.csv"
+
+
+BATCH PROCESSING (multiple files)
+--------------------------------------------------------------------------------
+Option A — Python batch script:
+  python batch_ingest.py --template FINAL_TEMPLATE.csv --files "C:\folder\*.csv"
+  python batch_ingest.py --template FINAL_TEMPLATE.csv --files file1.csv file2.csv file3.csv
+
+  Extra options:
+    --schema monet              Schema name (default: monet)
+    --db "postgresql://..."     Database URL (Postgres: use --db-url; script may use --db)
+    --yes                       Skip confirmation prompt
+    --dry-run-only              Validate only, do not ingest
+    --source-prefix "CJ"        Name sources CJ1, CJ2, etc.
+    --start-index 1             Starting index for source naming
+
+  Note: batch_ingest.py may prompt for SQLite DBs by default. For Postgres, set
+  DATABASE_URL before running, or ensure batch_ingest passes --db-url to the CLI.
+
+Option B — Manual loop (PowerShell):
+  Get-ChildItem "C:\folder\*.csv" | ForEach-Object {
+    python -m ingestion.cli --schema monet --file $_.FullName `
+      --source $_.BaseName --mapping-template FINAL_TEMPLATE.csv
+  }
+
+Option C — Manual loop (cmd):
+  for %f in (file1.csv file2.csv) do python -m ingestion.cli --schema monet --file %f --source %~nf --mapping-template FINAL_TEMPLATE.csv
+
+
+COMMON WORKFLOWS
+--------------------------------------------------------------------------------
+1. Dry-run first (validate before insert):
+   python -m ingestion.cli --schema monet --file data.csv --source "Test" --mapping-template FINAL_TEMPLATE.csv --dry-run
+
+2. Full ingest with appendix:
+   python -m ingestion.cli --schema monet --file data.csv --source "Vendor" --mapping-template FINAL_TEMPLATE.csv
+
+3. Ingest without appendix (faster for large files):
+   python -m ingestion.cli --schema monet --file data.csv --source "Vendor" --mapping-template FINAL_TEMPLATE.csv --skip-appendix
+
+4. Custom upload tag:
+   python -m ingestion.cli ... --upload-tag "2025_batch_3"
+
+
+TEMPLATE
+--------------------------------------------------------------------------------
+Use FINAL_TEMPLATE.csv. Fill incoming_schema with your file column names.
+For first+last name → owner_name, use:  first name + last name,owner_name

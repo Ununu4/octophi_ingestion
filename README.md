@@ -1,22 +1,18 @@
-# 🐙 OCTOPHI Ingestion System V1
+# 🐙 OCTOPHI Ingestion System
 
-**Modular Schema-Driven ETL + Normalization Pipeline for Monet (MCA Domain)**
+**Schema-driven ETL for Monet (MCA) — Postgres, template-only**
 
-Version: 1.0  
+Version: 2.0 (Postgres)  
 Author: Otto / Octophi
 
 ---
 
-## Overview
+## Overview (Current: Postgres + Template-Only)
 
-OCTOPHI is a universal, schema-driven ingestion engine that:
-
-- ✅ Loads data from **messy CSV/XLSX files**
-- ✅ Maps fuzzy headers to **canonical schema fields**
-- ✅ Applies **type-specific normalization** (phones, emails, dates, etc.)
-- ✅ Handles **extra columns** via appendix table
-- ✅ Produces **clean, normalized data** ready for database insertion
-- ✅ Supports **multiple domains** (currently: Monet/MCA)
+- **Target database:** PostgreSQL (`leadpool_migtest`). Uses `DATABASE_URL` or `--db-url`, else `config.DEFAULT_DATABASE_URL` (`postgresql://...@localhost:5433/leadpool_migtest`).
+- **Header mapping:** **Template-only** — a CSV mapping (`incoming_schema`, `expected_schema`) is **required** (`--mapping-template`). Fuzzy mode has been removed.
+- Loads **CSV/XLSX/XLS**, applies **type normalization** and **derived fields**, supports **template combinations** (e.g. `first name + last name` → `owner_name`), and writes to **sources**, **leads**, **owners**, and **lead_appendix_kv**.
+- One transaction; bulk inserts; source resolved by `upper(name)`.
 
 ---
 
@@ -24,30 +20,18 @@ OCTOPHI is a universal, schema-driven ingestion engine that:
 
 ```
 octophi_ingestion/
-├── schemas/
-│   └── monet/
-│       ├── schema.json      # Canonical schema definition
-│       └── fuzzy.json       # Header mapping rules
-│
+├── schemas/monet/
+│   └── schema.json          # Canonical schema
 ├── ingestion/
+│   ├── cli.py               # CLI (Postgres, required template)
 │   ├── schema_loader.py     # Schema parsing
-│   ├── header_mapper.py     # Fuzzy header matching
-│   ├── type_normalizer.py   # Type-specific cleaning
-│   ├── deep_cleaner.py      # Main cleaning orchestration
-│   ├── ingest_engine.py     # Database operations
-│   └── cli.py               # Command-line interface
-│
-├── utils/
-│   ├── logger.py            # Logging utilities
-│   └── file_ops.py          # File operations
-│
-├── tests/
-│   ├── test_schema_loader.py
-│   ├── test_header_mapper.py
-│   └── test_normalization.py
-│
-└── docs/
-    └── OCTOPHI_INGESTION_V1_SPEC.md
+│   ├── template_mapper.py   # Template-based header mapping
+│   ├── type_normalizer.py   # Type normalization
+│   ├── deep_cleaner.py      # Cleaning pipeline
+│   └── postgres_ingest_engine.py  # Postgres bulk ingest
+├── utils/ (logger, file_ops)
+├── templates/               # CSV mapping templates (required)
+└── tests/
 ```
 
 ---
@@ -56,65 +40,39 @@ octophi_ingestion/
 
 ### 1. Installation
 
-No external dependencies required beyond Python 3.9+ standard library and pandas:
-
 ```bash
-pip install pandas openpyxl
+pip install -r requirements.txt
+# pandas, openpyxl, psycopg2-binary
 ```
 
 ### 2. Basic Usage
 
+Set `DATABASE_URL` (or use default `config.DEFAULT_DATABASE_URL` for `leadpool_migtest`), then run with a **required** mapping template:
+
 ```bash
-# Navigate to project directory
-cd octophi_ingestion
+# Optional: export DATABASE_URL="postgresql://postgres:postgres@localhost:5433/leadpool_migtest"
 
-# Run ingestion with interactive database selection
 python -m ingestion.cli \
-    --schema monet \
-    --file /path/to/input.xlsx \
-    --source "Broker Name"
-# System will prompt you to choose between db1 (current) or db2 (new)
-
-# Or specify database directly
-python -m ingestion.cli \
-    --schema monet \
-    --file /path/to/input.xlsx \
-    --db /path/to/database.sqlite \
-    --source "Broker Name"
-
-# With preprocessing template (recommended for recurring sources)
-python -m ingestion.cli \
-    --schema monet \
-    --file /path/to/input.xlsx \
-    --source "Broker Name" \
-    --mapping-template templates/my_source_template.csv
-# System will prompt for database selection
+  --schema monet \
+  --file /path/to/file.xlsx \
+  --source "Some Vendor" \
+  --mapping-template templates/some_vendor.csv
 ```
 
-### 2.1 Database Selection
+Dry-run (no DB writes):
 
-The system supports two production databases:
-
-- **Database 1 (db1)**: Current database at `C:\Users\ottog\Desktop\monet_database_engine\unified_database_migrated.sqlite`
-- **Database 2 (db2)**: New database at `C:\Users\ottog\Desktop\monet_database_engine\unified_database_migrated_2.sqlite`
-
-If you don't specify `--db` flag, the system will prompt you to choose:
-
+```bash
+python -m ingestion.cli \
+  --schema monet \
+  --file /path/to/file.xlsx \
+  --source "Some Vendor" \
+  --mapping-template templates/some_vendor.csv \
+  --dry-run
 ```
-======================================================================
-DATABASE SELECTION
-======================================================================
 
-Please select target database:
+Optional: `--db-url` to override `DATABASE_URL`; `--upload-tag`, `--log-file`, `--skip-appendix`.
 
-  [1] Current Database (db1)
-      C:\Users\ottog\Desktop\monet_database_engine\unified_database_migrated.sqlite
-
-  [2] New Database (db2)
-      C:\Users\ottog\Desktop\monet_database_engine\unified_database_migrated_2.sqlite
-
-Enter your choice (1 or 2):
-```
+Database connection: `--db-url` > `DATABASE_URL` env > `config.DEFAULT_DATABASE_URL` (leadpool_migtest).
 
 ### 3. Full Command Options
 
@@ -136,11 +94,10 @@ python -m ingestion.cli \
 |----------|----------|-------------|
 | `--schema` | Yes | Schema name (e.g., "monet") |
 | `--file` | Yes | Input CSV or XLSX file |
-| `--db` | No | SQLite database path (if omitted, will prompt for db1 or db2) |
+| `--db-url` | No | Postgres URL (default: `DATABASE_URL` env, else `config.DEFAULT_DATABASE_URL`) |
 | `--source` | Yes | Source name for this data |
-| `--mapping-template` | No | **Path to CSV template for preprocessing header mapping (bypasses fuzzy matching)** |
+| `--mapping-template` | **Yes** | Path to CSV template: `incoming_schema`, `expected_schema` |
 | `--upload-tag` | No | Custom upload tag (default: timestamp) |
-| `--create-indexes` | No | Create performance indexes |
 | `--log-file` | No | Log to file (default: console only) |
 | `--dry-run` | No | Preview only, don't insert data |
 | `--skip-appendix` | No | Skip appendix data insertion (only mapped fields) |
@@ -152,9 +109,9 @@ python -m ingestion.cli \
 - 🎯 **100% accuracy** from explicit mappings
 - 📝 **Reusable** templates for each source
 
-**Create a template CSV:**
+**Create a template CSV** (columns: `incoming_schema`, `expected_schema`):
 ```csv
-original_header,canonical_field
+incoming_schema,expected_schema
 Business Name,business_legal_name
 Phone,phone_raw
 Owner Name,owner_name

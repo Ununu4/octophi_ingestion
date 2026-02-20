@@ -1,0 +1,47 @@
+{
+  "description": "Use this to build the mapping template (incoming_schema, expected_schema). The template maps your file headers to these exact expected_schema values. The engine writes to tables: sources, leads, owners, lead_appendix_kv.",
+  "source_name": {
+    "required": true,
+    "how": "Provided at run time via CLI: --source \"Your Source Name\". Not a column in the file. This is the name for this data source (e.g. file name or vendor name).",
+    "stored_in": "sources.name (unique on upper(name))"
+  },
+  "leads": {
+    "table": "leads",
+    "expected_schema_values": [
+      "business_legal_name",
+      "dba",
+      "business_address",
+      "business_city",
+      "business_state",
+      "zip",
+      "phone_raw",
+      "phone_clean",
+      "start_date",
+      "tax_id",
+      "soc",
+      "business_email",
+      "business_second_email",
+      "second_phone_raw",
+      "second_phone_clean"
+    ],
+    "notes": "phone_clean is derived from phone_raw if not mapped. second_phone_clean is derived from second_phone_raw. Map your file columns to these names in the template expected_schema column. source_id is added by the engine from --source."
+  },
+  "owners": {
+    "table": "owners",
+    "expected_schema_values": [
+      "owner_name",
+      "dob",
+      "ssn",
+      "owner_address",
+      "owner_city",
+      "owner_state",
+      "owner_zip",
+      "owner_email",
+      "owner_second_email",
+      "owner_phone",
+      "owner_phone_clean"
+    ],
+    "notes": "owner_phone_clean is derived from owner_phone if not mapped. lead_id is added by the engine (one owner per lead). Map your file columns to these names in the template expected_schema column."
+  },
+  "template_format": "CSV with two columns: incoming_schema (your file header), expected_schema (one of the values above). Use 'first name + last name' in incoming_schema to combine columns into one expected_schema (e.g. owner_name)."
+}

@@ -9,15 +9,13 @@ import pandas as pd
 from pathlib import Path
 from typing import Tuple, List, Dict, Optional
 from .schema_loader import Schema
-from .header_mapper import HeaderMapper
 from .type_normalizer import Normalizer
-from .duration_parser import DurationParser
 
 
 class DeepCleaner:
-    """Cleans and normalizes raw data files."""
-    
-    def __init__(self, schema: Schema, mapper: HeaderMapper, normalizer: Normalizer):
+    """Cleans and normalizes raw data files. Template-based mapping only."""
+
+    def __init__(self, schema: Schema, mapper, normalizer: Normalizer):
         """
         Initialize deep cleaner.
         
@@ -44,95 +42,39 @@ class DeepCleaner:
         # Load file
         df = self._load_file(input_path)
         
-        # Map headers
+        # Map headers (template mapper only)
         header_mapping = self.mapper.map_headers(df.columns.tolist())
-        
-        # Check mapper type for clean flow separation
-        is_template_mode = hasattr(self.mapper, 'mapper_type') and self.mapper.mapper_type == 'template'
-        
-        if is_template_mode:
-            # TEMPLATE MODE: Clean, direct mapping with optional combinations
-            
-            # Apply field combinations if defined in template
-            combinations = self.mapper.get_combinations()
-            if combinations:
-                df, header_mapping = self._apply_combinations(df, combinations, header_mapping)
-            
-            # Identify known vs unknown columns
-            known_cols = {raw: canonical for raw, canonical in header_mapping.items() 
-                          if canonical is not None and canonical != '__USED_IN_COMBINATION__'}
-            unknown_cols = [raw for raw, canonical in header_mapping.items() 
-                           if canonical is None]
-            
-            # Remove combination sources from unknown (they're used, not appendix)
-            combination_sources = []
+
+        # Apply field combinations if defined in template
+        combinations = self.mapper.get_combinations()
+        if combinations:
+            df, header_mapping = self._apply_combinations(df, combinations, header_mapping)
+
+        # Identify known vs unknown columns
+        known_cols = {raw: canonical for raw, canonical in header_mapping.items()
+                      if canonical is not None and canonical != '__USED_IN_COMBINATION__'}
+        unknown_cols = [raw for raw, canonical in header_mapping.items()
+                        if canonical is None]
+
+        # Remove combination sources from unknown (they're used, not appendix)
+        combination_sources = []
+        for combo in combinations:
+            combination_sources.extend(combo['sources'])
+        unknown_cols = [col for col in unknown_cols if col not in combination_sources]
+
+        # Exclude specific columns from appendix (e.g., ZB Status)
+        exclude_from_appendix = ['ZB Status', 'zb status', 'ZB Status ']
+        unknown_cols = [col for col in unknown_cols if col not in exclude_from_appendix]
+
+        print(f"[LOAD] {len(df)} rows with {len(df.columns)} columns")
+        print(f"[DIRECT MAP] Mapped {len(known_cols)} fields via template")
+        if combinations:
+            print(f"[COMBINE] Applied {len(combinations)} field combination(s):")
             for combo in combinations:
-                combination_sources.extend(combo['sources'])
-            unknown_cols = [col for col in unknown_cols 
-                           if col not in combination_sources]
-            
-            # Exclude specific columns from appendix (e.g., ZB Status)
-            exclude_from_appendix = ['ZB Status', 'zb status', 'ZB Status ']
-            unknown_cols = [col for col in unknown_cols 
-                           if col not in exclude_from_appendix]
-            
-            print(f"[LOAD] {len(df)} rows with {len(df.columns)} columns")
-            print(f"[DIRECT MAP] Mapped {len(known_cols)} fields via template")
-            if combinations:
-                print(f"[COMBINE] Applied {len(combinations)} field combination(s):")
-                for combo in combinations:
-                    print(f"   - {' + '.join(combo['sources'])} -> {combo['target_field']}")
-            if unknown_cols:
-                print(f"[APPENDIX] {len(unknown_cols)} unmapped columns: {', '.join(unknown_cols)}")
-        else:
-            # FUZZY MODE: Intelligent matching with combinations and computations
-            # Apply field combinations FIRST (before identifying known/unknown)
-            combinations = self.mapper.get_combinations()
-            if combinations:
-                df, header_mapping = self._apply_combinations(df, combinations, header_mapping)
-            
-            # Apply field computations SECOND (duration to date, etc.)
-            computations = self.mapper.get_computations()
-            if computations:
-                df, header_mapping = self._apply_computations(df, computations, header_mapping)
-            
-            # Identify known vs unknown columns
-            known_cols = {raw: canonical for raw, canonical in header_mapping.items() 
-                          if canonical is not None and not canonical.startswith('_COMBINE_')}
-            unknown_cols = [raw for raw, canonical in header_mapping.items() 
-                           if canonical is None or canonical.startswith('_COMBINE_')]
-            
-            # Remove combination sources from unknown (they're used, not appendix)
-            combination_sources = []
-            for combo in combinations:
-                combination_sources.extend(combo['sources'])
-            
-            # Remove computation sources from unknown (they're used, not appendix)
-            computation_sources = []
-            for comp in computations:
-                computation_sources.append(comp['source'])
-            
-            unknown_cols = [col for col in unknown_cols 
-                           if col not in combination_sources and col not in computation_sources]
-            
-            # Exclude specific columns from appendix (e.g., ZB Status)
-            exclude_from_appendix = ['ZB Status', 'zb status', 'ZB Status ']
-            unknown_cols = [col for col in unknown_cols 
-                           if col not in exclude_from_appendix]
-            
-            print(f"[LOAD] {len(df)} rows with {len(df.columns)} columns")
-            print(f"[FUZZY MAP] Matched {len(known_cols)} fields")
-            if combinations:
-                print(f"[COMBINE] Applied {len(combinations)} field combination(s):")
-                for combo in combinations:
-                    print(f"   - {' + '.join(combo['sources'])} -> {combo['target_field']}")
-            if computations:
-                print(f"[COMPUTE] Applied {len(computations)} field computation(s):")
-                for comp in computations:
-                    print(f"   - {comp['source']} -> {comp['target_field']} (duration to date)")
-            if unknown_cols:
-                print(f"[APPENDIX] {len(unknown_cols)} extra columns: {', '.join(unknown_cols)}")
-        
+                print(f"   - {' + '.join(combo['sources'])} -> {combo['target_field']}")
+        if unknown_cols:
+            print(f"[APPENDIX] {len(unknown_cols)} unmapped columns: {', '.join(unknown_cols)}")
+
         # Rename known columns to canonical names
         df_renamed = df.rename(columns=known_cols)
         
@@ -350,39 +292,7 @@ class DeepCleaner:
             header_mapping[target_field] = target_field
         
         return df, header_mapping
-    
-    def _apply_computations(self, df: pd.DataFrame, computations: List[Dict], 
-                            header_mapping: Dict) -> Tuple[pd.DataFrame, Dict]:
-        """
-        Apply field computation rules to DataFrame.
-        
-        Args:
-            df: Source DataFrame
-            computations: List of computation rules from header mapper
-            header_mapping: Current header mapping dict
-            
-        Returns:
-            Tuple of (modified DataFrame, updated header mapping)
-        """
-        df = df.copy()
-        
-        for comp in computations:
-            target_field = comp['target_field']
-            source = comp['source']
-            comp_type = comp['type']
-            
-            if comp_type == 'duration_to_date':
-                # Convert duration to date
-                computed_values = df[source].apply(DurationParser.parse_duration_to_date)
-                
-                # Add computed column to DataFrame
-                df[target_field] = computed_values
-                
-                # Update header mapping to include the new computed field
-                header_mapping[target_field] = target_field
-        
-        return df, header_mapping
-    
+
     def validate_required_fields(self, leads_df: pd.DataFrame, owners_df: pd.DataFrame) -> List[str]:
         """
         Validate that required fields are present and not empty.

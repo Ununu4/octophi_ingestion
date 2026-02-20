@@ -59,4 +59,34 @@ htmlcov/
 .env
 .env.local
 
+# One-off / clutter scripts (keep repo lean)
+analyze_phones.py
+compare_*.py
+db_diagnostic.py
+db_full_view.py
+export_*.py
+find_duplicate_phones.py
+match_full_xlsx.py
+preview_owners.py
+quick_search.py
+quick_start.py
+remove_60k_from_hamburguer.py
+retrieve_by_ids.py
+sasson_unique_full_data.py
+test_duration_conversion.py
+unify_sources.py
+verify_*.py
+check_sources.py
+BATCH_INGESTION_GUIDE.md
+DATABASE_SELECTION_UPDATE.md
+INGESTION_LOGIC.md
+USAGE_GUIDE.md
+INSTALL.md
+DB_FULL_VIEW.md
+verify_setup.py
+cursor_prompt_*.md
+db_full_view.json
+db_schema.json
+*.xlsx#
+.~lock.*
 

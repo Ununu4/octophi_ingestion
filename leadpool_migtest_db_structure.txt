@@ -1,0 +1,311 @@
+
+Leadpool Database Structure Extract
+Generated: 2026-02-20T11:27:59.063303
+Database: postgresql://postgres:***@localhost:5433/leadpool_migtest
+
+
+================================================================================
+ SCHEMAS
+================================================================================
+
+  public (owner: pg_database_owner)
+
+================================================================================
+ TABLES (all table types)
+================================================================================
+
+  public.change_requests (BASE TABLE)
+  public.lead_appendix_kv (BASE TABLE)
+  public.leads (BASE TABLE)
+  public.owners (BASE TABLE)
+  public.sources (BASE TABLE)
+  public.staging_leads (BASE TABLE)
+
+================================================================================
+ COLUMNS (by table)
+================================================================================
+
+--- public.change_requests ---
+    id: text NOT NULL
+    created_at: timestamptz NULL DEFAULT now()
+    lead_id: text NOT NULL
+    changes: jsonb NOT NULL
+    note: text NULL
+    status: text NOT NULL DEFAULT 'pending'::text
+    reviewed_at: timestamptz NULL
+    reviewed_by: text NULL
+
+  --- public.lead_appendix_kv ---
+    id: int8 NOT NULL
+    lead_id: int8 NOT NULL
+    source_id: int8 NULL
+    upload_tag: text NULL
+    original_row_number: int8 NULL
+    column_name: text NOT NULL
+    value: text NULL
+    created_at: text NULL DEFAULT (now())::text
+
+  --- public.leads ---
+    id: int8 NOT NULL
+    business_legal_name: text NULL
+    dba: text NULL
+    business_address: text NULL
+    business_city: text NULL
+    business_state: text NULL
+    zip: text NULL
+    phone_raw: text NULL
+    phone_clean: text NULL
+    start_date: text NULL
+    tax_id: text NULL
+    soc: text NULL
+    source_id: int8 NULL
+    created_at: text NULL DEFAULT (now())::text
+    updated_at: text NULL
+    business_email: text NULL
+    business_second_email: text NULL
+    second_phone_raw: text NULL
+    second_phone_clean: text NULL
+
+  --- public.owners ---
+    id: int8 NOT NULL
+    lead_id: int8 NOT NULL
+    owner_name: text NULL
+    dob: text NULL
+    ssn: text NULL
+    owner_address: text NULL
+    owner_city: text NULL
+    owner_state: text NULL
+    owner_zip: text NULL
+    created_at: text NULL DEFAULT (now())::text
+    updated_at: text NULL
+    owner_email: text NULL
+    owner_second_email: text NULL
+    owner_phone: text NULL
+    owner_phone_clean: text NULL
+
+  --- public.sources ---
+    id: int8 NOT NULL
+    name: text NOT NULL
+    notes: text NULL
+    created_at: text NULL DEFAULT (now())::text
+
+  --- public.staging_leads ---
+    business_legal_name: text NULL
+    dba: text NULL
+    business_address: text NULL
+    business_city: text NULL
+    business_state: text NULL
+    zip: text NULL
+    phone_raw: text NULL
+    phone_clean: text NULL
+    start_date: text NULL
+    tax_id: text NULL
+    soc: text NULL
+    source: text NULL
+    business_email: text NULL
+    business_second_email: text NULL
+    second_phone_raw: text NULL
+    second_phone_clean: text NULL
+    owner_name: text NULL
+    dob: text NULL
+    ssn: text NULL
+    owner_address: text NULL
+    owner_city: text NULL
+    owner_state: text NULL
+    owner_zip: text NULL
+    owner_email: text NULL
+    owner_second_email: text NULL
+    owner_phone: text NULL
+    owner_phone_clean: text NULL
+
+================================================================================
+ PRIMARY KEYS
+================================================================================
+
+  public.change_requests: id (change_requests_pkey)
+  public.lead_appendix_kv: id (lead_appendix_kv_pkey)
+  public.leads: id (leads_pkey)
+  public.owners: id (owners_pkey)
+  public.sources: id (sources_pkey)
+
+================================================================================
+ FOREIGN KEYS
+================================================================================
+
+  (none)
+
+================================================================================
+ UNIQUE CONSTRAINTS
+================================================================================
+
+  (none)
+
+================================================================================
+ CHECK CONSTRAINTS
+================================================================================
+
+  public.change_requests (change_requests_status_check): ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'declined'::text])))
+  public.change_requests (2200_16665_1_not_null): id IS NOT NULL
+  public.change_requests (2200_16665_3_not_null): lead_id IS NOT NULL
+  public.change_requests (2200_16665_4_not_null): changes IS NOT NULL
+  public.change_requests (2200_16665_6_not_null): status IS NOT NULL
+  public.lead_appendix_kv (2200_16639_1_not_null): id IS NOT NULL
+  public.lead_appendix_kv (2200_16639_2_not_null): lead_id IS NOT NULL
+  public.lead_appendix_kv (2200_16639_6_not_null): column_name IS NOT NULL
+  public.leads (2200_16597_1_not_null): id IS NOT NULL
+  public.owners (2200_16621_2_not_null): lead_id IS NOT NULL
+  public.owners (2200_16621_1_not_null): id IS NOT NULL
+  public.sources (2200_16587_1_not_null): id IS NOT NULL
+  public.sources (2200_16587_2_not_null): name IS NOT NULL
+
+================================================================================
+ INDEXES
+================================================================================
+
+public.change_requests:
+    change_requests_pkey
+    CREATE UNIQUE INDEX change_requests_pkey ON public.change_requests USING btree (id)
+
+  public.change_requests:
+    idx_change_requests_created_at
+    CREATE INDEX idx_change_requests_created_at ON public.change_requests USING btree (created_at)
+
+  public.change_requests:
+    idx_change_requests_status
+    CREATE INDEX idx_change_requests_status ON public.change_requests USING btree (status)
+
+  public.lead_appendix_kv:
+    idx_lead_appendix_col
+    CREATE INDEX idx_lead_appendix_col ON public.lead_appendix_kv USING btree (column_name)
+
+  public.lead_appendix_kv:
+    idx_lead_appendix_lead
+    CREATE INDEX idx_lead_appendix_lead ON public.lead_appendix_kv USING btree (lead_id)
+
+  public.lead_appendix_kv:
+    idx_lead_appendix_upload
+    CREATE INDEX idx_lead_appendix_upload ON public.lead_appendix_kv USING btree (upload_tag)
+
+  public.lead_appendix_kv:
+    lead_appendix_kv_pkey
+    CREATE UNIQUE INDEX lead_appendix_kv_pkey ON public.lead_appendix_kv USING btree (id)
+
+  public.leads:
+    idx_leads_business_email
+    CREATE INDEX idx_leads_business_email ON public.leads USING btree (business_email)
+
+  public.leads:
+    idx_leads_business_legal_name
+    CREATE INDEX idx_leads_business_legal_name ON public.leads USING btree ("left"(business_legal_name, 500))
+
+  public.leads:
+    idx_leads_business_second_email
+    CREATE INDEX idx_leads_business_second_email ON public.leads USING btree (business_second_email)
+
+  public.leads:
+    idx_leads_created_at
+    CREATE INDEX idx_leads_created_at ON public.leads USING btree (created_at)
+
+  public.leads:
+    idx_leads_phone_clean
+    CREATE INDEX idx_leads_phone_clean ON public.leads USING btree (phone_clean)
+
+  public.leads:
+    idx_leads_second_phone_clean
+    CREATE INDEX idx_leads_second_phone_clean ON public.leads USING btree (second_phone_clean)
+
+  public.leads:
+    idx_leads_source
+    CREATE INDEX idx_leads_source ON public.leads USING btree (source_id)
+
+  public.leads:
+    idx_leads_state
+    CREATE INDEX idx_leads_state ON public.leads USING btree (business_state)
+
+  public.leads:
+    idx_leads_taxid
+    CREATE INDEX idx_leads_taxid ON public.leads USING btree (tax_id)
+
+  public.leads:
+    idx_leads_zip
+    CREATE INDEX idx_leads_zip ON public.leads USING btree (zip)
+
+  public.leads:
+    leads_pkey
+    CREATE UNIQUE INDEX leads_pkey ON public.leads USING btree (id)
+
+  public.owners:
+    idx_owners_lead
+    CREATE INDEX idx_owners_lead ON public.owners USING btree (lead_id)
+
+  public.owners:
+    idx_owners_owner_email
+    CREATE INDEX idx_owners_owner_email ON public.owners USING btree (owner_email)
+
+  public.owners:
+    idx_owners_owner_phone_clean
+    CREATE INDEX idx_owners_owner_phone_clean ON public.owners USING btree (owner_phone_clean)
+
+  public.owners:
+    idx_owners_owner_second_email
+    CREATE INDEX idx_owners_owner_second_email ON public.owners USING btree (owner_second_email)
+
+  public.owners:
+    owners_pkey
+    CREATE UNIQUE INDEX owners_pkey ON public.owners USING btree (id)
+
+  public.sources:
+    idx_sources_name_upper
+    CREATE UNIQUE INDEX idx_sources_name_upper ON public.sources USING btree (upper(name))
+
+  public.sources:
+    sources_pkey
+    CREATE UNIQUE INDEX sources_pkey ON public.sources USING btree (id)
+
+================================================================================
+ TRIGGERS
+================================================================================
+
+  (none)
+
+================================================================================
+ VIEWS (definitions)
+================================================================================
+
+  (none)
+
+================================================================================
+ MATERIALIZED VIEWS (definitions)
+================================================================================
+
+  (none)
+
+================================================================================
+ FUNCTIONS (full definitions)
+================================================================================
+
+  (none)
+
+================================================================================
+ SEQUENCES
+================================================================================
+
+  (none)
+
+================================================================================
+ RULES
+================================================================================
+
+  (none)
+
+================================================================================
+ TABLE/VIEW COMMENTS
+================================================================================
+
+  (none)
+
+================================================================================
+ COLUMN COMMENTS
+================================================================================
+
+  (none)

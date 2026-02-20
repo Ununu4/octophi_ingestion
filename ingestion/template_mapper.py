@@ -57,6 +57,7 @@ class TemplateMapper:
         self.mapper_type = 'template'  # Identifier for clean flow separation
         self.mapping = {}
         self.combinations = []  # Field combinations (first + last → full)
+        self._direct_pairs: List[tuple] = []  # (incoming_schema, expected_schema) for 1:1 rows
         self._load_template()
     
     def _load_template(self):
@@ -109,6 +110,7 @@ class TemplateMapper:
                 # Regular 1:1 mapping
                 key = incoming.lower().strip()
                 self.mapping[key] = expected
+                self._direct_pairs.append((incoming.strip(), expected.strip()))
     
     def map_headers(self, raw_headers: List[str]) -> Dict[str, Optional[str]]:
         """
@@ -185,6 +187,10 @@ class TemplateMapper:
         """
         return self.combinations
     
+    def get_direct_pairs(self) -> List[tuple]:
+        """Return list of (incoming_schema, expected_schema) for non-combination rows."""
+        return list(self._direct_pairs)
+
     def get_computations(self) -> List[Dict]:
         """
         Get field computation rules.

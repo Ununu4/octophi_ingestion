@@ -1,19 +1,15 @@
-"""Ingestion modules."""
+"""Ingestion modules (Postgres, template-only)."""
 
 from .schema_loader import Schema
-from .header_mapper import HeaderMapper
+from .template_mapper import TemplateMapper
 from .type_normalizer import Normalizer
 from .deep_cleaner import DeepCleaner
-from .ingest_engine import IngestEngine
+from .postgres_ingest_engine import PostgresIngestEngine
 
 __all__ = [
     'Schema',
-    'HeaderMapper',
+    'TemplateMapper',
     'Normalizer',
     'DeepCleaner',
-    'IngestEngine',
+    'PostgresIngestEngine',
 ]
-
-
-
-

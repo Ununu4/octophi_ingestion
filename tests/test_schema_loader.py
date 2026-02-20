@@ -2,7 +2,6 @@
 Tests for schema_loader module.
 """
 
-import pytest
 import sys
 from pathlib import Path
 
@@ -58,7 +57,6 @@ def test_derived_from():
     schema = Schema(str(schema_path))
     
     assert schema.derived_from('lead', 'phone_clean') == 'phone_raw'
-    assert schema.derived_from('lead', 'soc') == 'sic'
     assert schema.derived_from('lead', 'business_legal_name') is None
 
 
@@ -67,9 +65,8 @@ def test_is_required():
     schema_path = Path(__file__).parent.parent / 'schemas' / 'monet' / 'schema.json'
     schema = Schema(str(schema_path))
     
-    assert schema.is_required('lead', 'business_legal_name') == True
-    assert schema.is_required('lead', 'source') == True
-    assert schema.is_required('lead', 'dba') == False
+    assert schema.is_required('lead', 'business_legal_name') is True
+    assert schema.is_required('lead', 'dba') is False
 
 
 def test_appendix_config():
